@@ -1,0 +1,68 @@
+id: Tim - UC0001 - Impossible-Travel
+name: Impossible Travel Detected Based on Sign-In Distance and Speed
+description:
+  This detection rule will Identify and Alert on potential account compromise by analyzing geographic distance and calculated travel 
+  speed between consecutive successful sign-ins for the same user.
+severity: Medium
+status: Experimental
+version: 1.0.0
+tactics:
+  - Initial Access
+  - Credential Access
+  - Persistence
+techniques:
+  - T1078
+  - T1566
+  - T1566.001
+query: |
+  let TimeWindow = 1d;
+  let MaxTravelTimeMinutes = 60;
+  let MaxSpeedKmh = 900;     // faster than commercial aircraft
+  SigninLogs
+  | where TimeGenerated > ago(1d)
+  | where ResultType == 0
+  | where isnotempty(LocationDetails.countryOrRegion)
+  | where isnotempty(LocationDetails.geoCoordinates.latitude)
+  | where isnotempty(LocationDetails.geoCoordinates.longitude)
+  | project
+      TimeGenerated,
+      UserPrincipalName,
+      IPAddress,
+      Country = LocationDetails.countryOrRegion,
+      City = LocationDetails.city,
+      Latitude = todouble(LocationDetails.geoCoordinates.latitude),
+      Longitude = todouble(LocationDetails.geoCoordinates.longitude)
+  | order by UserPrincipalName, TimeGenerated
+  | serialize
+  | extend
+      PrevUser = prev(UserPrincipalName),
+      PrevTime = prev(TimeGenerated),
+      PrevCountry = prev(Country),
+      PrevIP = prev(IPAddress),
+      PrevCity = prev(City),
+      PrevLatitude = prev(Latitude),
+      PrevLongitude = prev(Longitude)
+  | where UserPrincipalName == PrevUser
+  | extend TimeDiffMinutes = datetime_diff("minute", TimeGenerated, PrevTime)
+  | where TimeDiffMinutes >=0 and TimeDiffMinutes <= MaxTravelTimeMinutes
+  | extend
+      DistanceKM = geo_distance_2points(
+          Longitude, Latitude,
+          PrevLongitude, PrevLatitude
+      ) / 1000.0
+  | extend
+      SpeedKmh = DistanceKM / (TimeDiffMinutes / 60.0)
+  | where SpeedKmh >= MaxSpeedKmh
+  | project
+      TimeGenerated,
+      UserPrincipalName,
+      IPAddress,
+      Country,
+      City,
+      PrevTime,
+      PrevIP,
+      PrevCity,
+      PrevCountry,
+      TimeDiffMinutes,
+      DistanceKM,
+      SpeedKmh
