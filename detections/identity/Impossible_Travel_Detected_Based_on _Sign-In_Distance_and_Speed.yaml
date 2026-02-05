@@ -1,11 +1,14 @@
-id: Tim - UC0001 - Impossible-Travel
+id: UC0001-impossible-travel
 name: Impossible Travel Detected Based on Sign-In Distance and Speed
-description:
-  This detection rule will Identify and Alert on potential account compromise by analyzing geographic distance and calculated travel 
-  speed between consecutive successful sign-ins for the same user.
+description: >
+  Detects potential account compromise by analyzing geographic distance
+  and calculated travel speed between consecutive successful sign-ins
+  for the same user. Alerts when a user appears to travel faster than
+  possible between two sign-ins.
+author: Tim A.
 severity: Medium
 status: Experimental
-version: 1.0.0
+version: 1.1.0
 tactics:
   - Initial Access
   - Credential Access
@@ -14,12 +17,15 @@ techniques:
   - T1078
   - T1566
   - T1566.001
+references:
+  - https://attack.mitre.org/techniques/T1078/
+  - https://learn.microsoft.com/en-us/azure/sentinel/
 query: |
   let TimeWindow = 1d;
   let MaxTravelTimeMinutes = 60;
   let MaxSpeedKmh = 900;     // faster than commercial aircraft
   SigninLogs
-  | where TimeGenerated > ago(1d)
+  | where TimeGenerated > ago(TimeWindow)
   | where ResultType == 0
   | where isnotempty(LocationDetails.countryOrRegion)
   | where isnotempty(LocationDetails.geoCoordinates.latitude)
@@ -32,26 +38,24 @@ query: |
       City = LocationDetails.city,
       Latitude = todouble(LocationDetails.geoCoordinates.latitude),
       Longitude = todouble(LocationDetails.geoCoordinates.longitude)
-  | order by UserPrincipalName, TimeGenerated
+  | order by UserPrincipalName asc, TimeGenerated asc
   | serialize
   | extend
       PrevUser = prev(UserPrincipalName),
       PrevTime = prev(TimeGenerated),
-      PrevCountry = prev(Country),
       PrevIP = prev(IPAddress),
       PrevCity = prev(City),
+      PrevCountry = prev(Country),
       PrevLatitude = prev(Latitude),
       PrevLongitude = prev(Longitude)
   | where UserPrincipalName == PrevUser
   | extend TimeDiffMinutes = datetime_diff("minute", TimeGenerated, PrevTime)
-  | where TimeDiffMinutes >=0 and TimeDiffMinutes <= MaxTravelTimeMinutes
-  | extend
-      DistanceKM = geo_distance_2points(
+  | where TimeDiffMinutes > 0 and TimeDiffMinutes <= MaxTravelTimeMinutes
+  | extend DistanceKM = round(geo_distance_2points(
           Longitude, Latitude,
           PrevLongitude, PrevLatitude
-      ) / 1000.0
-  | extend
-      SpeedKmh = DistanceKM / (TimeDiffMinutes / 60.0)
+      ) / 1000.0, 2)
+  | extend SpeedKmh = round(DistanceKM / (TimeDiffMinutes / 60.0), 2)
   | where SpeedKmh >= MaxSpeedKmh
   | project
       TimeGenerated,
