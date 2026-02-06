@@ -21,7 +21,12 @@ references:
   - https://attack.mitre.org/techniques/T1078/
   - https://learn.microsoft.com/en-us/azure/sentinel/
 query: |
-  let TimeWindow = 1d;
+  // Id: UC0001-impossible-travel
+  // Name: Impossible Travel Detected Based on Sign-In Distance and Speed
+  // Description: Detects potential account compromise by analyzing geographic distance and calculated travel speed between
+  // consecutive  successful sign-ins for the same user. Alerts when a user appears to travel faster than possible between two sign-ins.
+  // Author: Tim A.
+  let TimeWindow = 10d;
   let MaxTravelTimeMinutes = 60;
   let MaxSpeedKmh = 900;     // faster than commercial aircraft
   SigninLogs
@@ -50,18 +55,29 @@ query: |
       PrevLongitude = prev(Longitude)
   | where UserPrincipalName == PrevUser
   | extend TimeDiffMinutes = datetime_diff("minute", TimeGenerated, PrevTime)
-  | where TimeDiffMinutes > 0 and TimeDiffMinutes <= MaxTravelTimeMinutes
+  | where TimeDiffMinutes >0 and TimeDiffMinutes <= MaxTravelTimeMinutes
+  | extend TimeDiffReadable = strcat(TimeDiffMinutes, " minutes")
   | extend DistanceKM = round(geo_distance_2points(
           Longitude, Latitude,
           PrevLongitude, PrevLatitude
       ) / 1000.0, 2)
   | extend SpeedKmh = round(DistanceKM / (TimeDiffMinutes / 60.0), 2)
   | where SpeedKmh >= MaxSpeedKmh
+  | extend AlertSummary = strcat(
+    UserPrincipalName,
+    " signed in from ", PrevCity,
+    " and then from ", City,
+    " (", DistanceKM, " km apart)",
+    " within ", TimeDiffReadable,
+    ", resulting in an estimated travel speed of ",
+    SpeedKmh, " km/h — strong indication of impossible travel."
+  )
   | project
       TimeGenerated,
       UserPrincipalName,
       IPAddress,
       Country,
+      AlertSummary,
       City,
       PrevTime,
       PrevIP,
@@ -69,4 +85,5 @@ query: |
       PrevCountry,
       TimeDiffMinutes,
       DistanceKM,
-      SpeedKmh
+      SpeedKmh,
+      TimeDiffReadable
