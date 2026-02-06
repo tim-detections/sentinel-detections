@@ -1,0 +1,104 @@
+id: UC0003-suspicious-signins-high-risk-email
+Name: Suspicious Sign-ins & High-Risk Email Activity
+Description: Detects potential abuse of valid user accounts by correlating successful sign-ins during
+  unusual time windows with inbound email activity containing multiple attachments and URLs.
+  rule aims to identify compromised accounts being leveragedfor phishing, malware delivery, or data staging
+author: Tim A.
+severity: Medium
+status: Experimental/Research
+version: 1.0.0
+confidence: Medium
+false_positives:
+  - Legitimate users accessing email during non-standard working hours
+  - Automated business workflows sending multiple attachments
+  - Shared service accounts with approved after-hours access
+tactics:
+  - Initial Access
+  - Credential Access
+  - Collection
+  - Command and Control
+techniques:
+  - T1078        # Valid Accounts
+  - T1566        # Phishing
+  - T1566.001    # Spearphishing Attachment
+  - T1204.002    # User Execution: Malicious File
+data_sources:
+  - SigninLogs
+  - EmailEvents
+  - EmailUrlInfo
+query: |
+  // Id: UC0003-suspicious-signins-high-risk-email
+  // Name: Suspicious Sign-ins & High-Risk Email Activity
+  // Description: Detects potential abuse of valid user accounts by correlating successful sign-ins during
+  // unusual time windows with inbound email activity containing multiple attachments and URLs.
+  //  rule aims to identify compromised accounts being leveragedfor phishing, malware delivery, or data staging.
+  // ------------------------------------------------------
+  // Detects suspicious sign-ins followed by risky email behavior
+  // involving multiple attachments and URL presence
+  // ------------------------------------------------------
+  let SuspiciousActors =
+  SigninLogs
+      | where TimeGenerated >= ago(42d)
+      | where ResultSignature == "SUCCESS"
+      | where dayofweek(TimeGenerated) in (2d, 4d)
+      | where datetime_part("hour", TimeGenerated) between (20 .. 21)
+      | project ActorUserName = tolower(UserPrincipalName)
+      | distinct ActorUserName;
+  let RecievedEmails =
+      EmailEvents
+      | where TimeGenerated >= ago(42d)
+      | where DeliveryLocation == "Inbox/folder"
+          or DeliveryAction == "Delivered"
+      | extend TargetUserId = tolower(RecipientEmailAddress)
+      | extend ActorUserId = tolower(SenderFromAddress)
+      | extend WeeklyActivity = bin(TimeGenerated, 7d);
+  let QualifiedEmailAttachment =
+      RecievedEmails
+      | where AttachmentCount > 2
+      | where ActorUserId in (SuspiciousActors)
+      | project TimeGenerated, WeeklyActivity, TargetUserId, NetworkMessageId;
+  let WeeklyQualifiedEmailsCounts =
+      QualifiedEmailAttachment
+      | summarize QualifiedEmailCounts = count()
+          by WeeklyActivity, TargetUserId;
+  let WeeklyTotalInboxCounts =
+      RecievedEmails
+      | summarize TotalInboxEmails = count()
+          by WeeklyActivity, TargetUserId;
+  let MostReceivedEmails =
+      QualifiedEmailAttachment
+      | summarize arg_max(TimeGenerated, NetworkMessageId)
+          by WeeklyActivity, TargetUserId;
+  let UrlCounts =
+      EmailUrlInfo
+      | summarize UrlCount = count()
+          by NetworkMessageId;
+  WeeklyQualifiedEmailsCounts
+  | join kind=inner (WeeklyTotalInboxCounts)
+      on WeeklyActivity, TargetUserId
+  | join kind=inner (MostReceivedEmails)
+      on WeeklyActivity, TargetUserId
+  | join kind=leftouter (UrlCounts)
+      on NetworkMessageId
+  | extend PercentageOfWeeklyInboxActivity =
+      round(100.0 * QualifiedEmailCounts / TotalInboxEmails, 4)
+  | extend AlertSummary = strcat(
+    TargetUserId, 
+    " had ", QualifiedEmailCounts, " inbound email(s) with over 2 attachments",
+    " during the week of ", format_datetime(WeeklyActivity, 'yyyy-MM-dd'),
+    " (", tostring(PercentageOfWeeklyInboxActivity), "% of inbox activity).",
+    iif(coalesce(UrlCount, 0) > 0, 
+        strcat(" Emails contained ", UrlCount,
+        " URL(s) — strong indicator of potential phishing/malware attack"), 
+        " No URLs detected in these emails."
+      )
+  )
+  | project
+      WeeklyActivity,
+      TargetUserId,
+      User = split(TargetUserId, "@")[0],
+      QualifiedEmailCounts,
+      PercentageOfWeeklyInboxActivity,
+      UrlCount,
+      AlertSummary
+    | order by WeeklyActivity desc, TargetUserId asc
