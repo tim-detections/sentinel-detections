@@ -1,6 +1,6 @@
-Id: UC0004-AKS-Exec-Blob-Exfiltration
+Id: UC0004-AKS-Exec-Sensitive-Blob-Access
 Name: AKS Exec Followed by Sensitive Blob Storage Access
-Description: Detects command execution inside Azure Kubernetes Service (AKS) containersfollowed shortly 
+Description: Detects command execution inside Azure Kubernetes Service (AKS) containers followed shortly 
   by read or list activity against sensitive Azure Blob Storage containers.
   This behavior may indicate container compromise and subsequent data staging or exfiltration.
 Author: Tim A.
@@ -16,7 +16,7 @@ techniques:
   - T1613    # Container and Resource Discovery
   - T1537    # Transfer Data to Cloud Account
 query: |
-  // Id: UC0004-aks-exec-blob-exfiltration
+  // Id: UC0004-AKS-Exec-Sensitive-Blob-Access
   // Name: AKS Exec Followed by Sensitive Blob Storage Access
   // Description: Detects command execution inside Azure Kubernetes Service (AKS) containers followed shortly
   // by read or list activity against sensitive Azure Blob
