@@ -12,7 +12,7 @@
 
 This repository contains Microsoft Sentinel analytic detection rules developed using a **detection-as-code** approach and organised by security domain and attack chain.
 
-The purpose of this repository is to demonstrate how detection engineering is performed in a production SOC environment, with an emphasis on maintainability, signal quality, and attacker-centric detection logic rather than alert volume.
+The purpose of this repository is to demonstrate how detection engineering is performed in a production SOC environment, with an emphasis on **maintainability**, **signal quality**, and **attacker-centric detection logic** rather than alert volume.
 
 All detections are written, tested, and iteratively refined as they would be in a real-world Microsoft Sentinel deployment
 
@@ -29,7 +29,7 @@ All detections are written, tested, and iteratively improved as they would be in
 
 ## What You’ll Find in This Repository
 
-- **KQL-based Sentinel analytics rules**
+- KQL-based Sentinel analytics rules
 - Iterative tuning and false-positive reduction
 - Versioned detections (`v1.0.0`, `v1.1.0`, etc.)
 - Clear documentation explaining detection intent
