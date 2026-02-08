@@ -1,7 +1,7 @@
 # Microsoft Sentinel Detections (Detection as Code)
 
 **Author:** Tim A.  
-**Role:** Cybersecurity Engineer – (Microsoft Sentinel, KQL & Microsoft XDR) 
+**Role:** Cybersecurity Engineer – Microsoft Sentinel, KQL & Microsoft XDR 
 **Specialization:** Detection Engineering, Threat Hunting, SOC Enablement  
 
 ---
@@ -9,18 +9,29 @@
 ### Overview
 
 This repository contains Microsoft Sentinel analytic detection rules developed using a **detection-as-code** approach and organised by security domain and attack chain.
+
 The purpose of this repository is to demonstrate how detection engineering is performed in a production SOC environment, with an emphasis on maintainability, signal quality, and attacker-centric detection logic rather than alert volume.
 
-All detections are written, tested, and iteratively refined as they would be in a real-world Microsoft Sentinel deployment.
+All detections are written, tested, and iteratively refined as they would be in a real-world Microsoft Sentinel deployment
+
+**What This Repository Demonstrates:**
+- Real-world detection engineering practices aligned to modern cloud threats
+- Structured, readable, and maintainable KQL
+- Version-controlled detection development and tuning
+- Detections mapped to attacker behaviour and attack paths
+- Practical SOC-ready analytics designed to reduce noise and increase confidence
+
+All detections are written, tested, and iteratively improved as they would be in a production SOC environment.
 
 ---
 
-## **What This Repository Demonstrates:**
-Real-world detection engineering practices aligned to modern cloud threats
-Structured, readable, and maintainable KQL
-Version-controlled detection development and tuning
-Detections mapped to attacker behaviour and attack paths
-Practical SOC-ready analytics designed to reduce noise and increase confidence
+## What You’ll Find in This Repository
+
+- **KQL-based Sentinel analytics rules**
+- Iterative tuning and false-positive reduction
+- Versioned detections (`v1.0.0`, `v1.1.0`, etc.)
+- Clear documentation explaining detection intent
+- Focus on signal quality over alert volume
 
 ---
 
@@ -42,18 +53,20 @@ This lab follows a few core principles:
 
 ---
 
+**Repository Structure**
 
-Repository Structure:
 Detections are organised by security domain and, where applicable, attack-chain alignment to support scalability and iterative improvement:
-**Identity** – Entra ID sign-ins, authentication abuse, MFA and account compromise
-**Cloud** – Azure, Kubernetes, and workload-level attack paths
-**Endpoint** – Host-based attacker behaviour and execution patterns
-**Data Protection** – Exfiltration, sensitive data access, and insider risk
-**Cross-Domain** – Correlated detections spanning identity, cloud, endpoint, and data
+
+- **Identity** – Entra ID sign-ins, authentication abuse, MFA and account compromise
+- **Endpoint** – Host-based attacker behaviour and execution patterns
+- **Cloud** – Azure, Kubernetes, and workload-level attack paths
+- **Data Protection** – Exfiltration, sensitive data access, and insider risk
+- **Cross-Domain** – Correlated detections spanning identity, cloud, endpoint, and data
+- **utilities** -
 
 Each detection family supports versioning (v1 → v2 → v3) to reflect ongoing tuning and maturity.
 
-## Repository Intended Structure (still in progress)
+## Repository Intended Structure @View (still in progress)
 
 ```text
 sentinel-detections/
