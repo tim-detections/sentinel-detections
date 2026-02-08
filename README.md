@@ -48,13 +48,48 @@ This lab follows a few core principles:
 
 ---
 
-## Repository Structure (Example)
+## Repository Intended Structure (still in progress)
 
 ```text
 sentinel-detections/
+├── README.md                     # Executive overview (what, why, impact)
+├── CONTRIBUTING.md               # Optional: how detections are structured
 ├── detections/
 │   ├── identity/
+│   │   ├── impossible-travel/
+│   │   │   ├── README.md
+│   │   │   ├── impossible_travel_v1_distance_speed.yaml
+│   │   │   └── impossible_travel_v2_new_device_context.yaml
+│   │   ├── suspicious-signin-email/
+│   │   │   ├── README.md
+│   │   │   └── suspicious_signin_high_risk_email_activity.yaml
+│   │   ├── mfa-abuse/             # future
+│   │   ├── privileged-access/     # future (PIM, admin abuse)
+│   │
 │   ├── endpoint/
+│   │   ├── persistence/
+│   │   ├── credential-access/
+│   │   └── defense-evasion/
+│   │
 │   ├── cloud/
-│   └── network/
-├── README.md
+│   │   ├── kubernetes/
+│   │   │   ├── README.md
+│   │   │   └── aks_exec_followed_by_sensitive_blob_access.yaml
+│   │   ├── azure-resource-abuse/
+│   │   └── service-principal/
+│   │
+│   ├── data-protection/
+│   │   ├── exfiltration/
+│   │   ├── insider-threat/
+│   │   └── label-abuse/
+│   │
+│   └── cross-domain/
+│       ├── identity-to-cloud/
+│       ├── endpoint-to-cloud/
+│       └── identity-to-data/
+│
+└── utilities/
+    ├── baseline-queries/
+    ├── enrichment-functions/
+    └── lookup-tables/
+
