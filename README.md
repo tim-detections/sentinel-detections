@@ -68,7 +68,7 @@ Detections are organised by security domain and, where applicable, attack-chain 
 
 Each detection family supports versioning (v1 → v2 → v3) to reflect ongoing tuning and maturity.
 
-## Repository Intended Structure @View (still in progress)
+## **Repository Structure – Intended View (WIP)”**
 
 ```text
 sentinel-detections/
