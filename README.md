@@ -2,6 +2,7 @@
 
 **Author:** Tim A.  
 **Role:** Cybersecurity Engineer – (Microsoft Sentinel, KQL & Microsoft XDR)
+
 **Specialization:** Detection Engineering, Threat Hunting, SOC Enablement  
 
 ---
