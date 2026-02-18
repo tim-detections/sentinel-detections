@@ -1,0 +1,81 @@
+Id: UC10005-Risky_SignIn_Followed_By_Privileged_Role_Activation
+name: Risky Sign-In Followed by Privileged Role Activation
+Description: Detects potential privilege escalation by correlating risky sign-in events with subsequent 
+  privileged role activations or assignments in Microsoft Entra ID. This behavior may indicate successful 
+  account compromise followed by attempts to gain elevated access through Azure AD Privileged Identity Management (PIM) or direct role assignment.
+Author: Tim A.
+severity: High
+status: Experimental/Research
+data-source:
+- SigninLogs
+- AuditLogs
+tactics:
+  - PrivilegeEscalation
+  - InitialAccess
+techniques:
+  - T1078
+  - T1098
+query: |
+  // Id: UC10005-Risky_SignIn_Followed_By_Privileged_Role_Activation
+  // Name: Risky SignIn Followed By Privileged Role Activation
+  // Description: This detection identifies potential privilege escalation following a risky authentication event in Microsoft Entra ID.
+  // It correlates high- and medium-risk sign-ins with subsequent privileged role activations or assignments,
+  // including Azure AD Privileged Identity Management (PIM) events.
+  // ===================================================================================
+  let RiskySigninLookback = 20d;
+  let PrivilegeChangeLookback = 20d;
+  let PrivilegeWindow = 16d;  // Time window between risky sign-in and privilege change
+  // ===========================================
+  // Risky sign-ins (High / Medium)
+  // ===========================================
+  let RiskySignins =
+  SigninLogs
+  | where TimeGenerated >= ago(RiskySigninLookback)
+  | where RiskLevelAggregated in ("high", "medium")
+  | extend UserPrincipalName = tolower(UserPrincipalName)   // normalize for joins
+  | project
+    UserPrincipalName,
+    SigninTime = TimeGenerated,
+    IPAddress,
+    RiskLevelAggregated
+  ;
+  // ===================================================
+  // Privileged role changes via PIM
+  // ===================================================
+  let PrivilegeChanges =
+  AuditLogs
+  | where TimeGenerated >= ago(PrivilegeChangeLookback)
+  | where OperationName has_any (
+    "Add member to role",
+    "Activate eligible role"
+  )
+  | mv-expand TargetResources             // TargetResources is an array
+  | extend Initiator = tolower(tostring(InitiatedBy.user.userPrincipalName))
+  | where isnotempty(Initiator)           // avoid app-initiated noise
+  | project
+    Initiator,
+    PrivilegedRole = tostring(TargetResources.displayName),
+    PrivilegeTime = TimeGenerated
+  ;
+  // ====================================================
+  // Correlate risky sign-in to privilege escalation
+  // ====================================================
+  RiskySignins
+  | join kind=inner PrivilegeChanges
+    on $left.UserPrincipalName == $right.Initiator
+  | where PrivilegeTime between (SigninTime .. SigninTime + PrivilegeWindow)
+  | summarize
+    FirstRiskySignin = min(SigninTime),
+    FirstPrivilegeEscalation = min(PrivilegeTime),
+    Roles = make_set(PrivilegedRole),
+    IPs = make_set(IPAddress),
+    RiskLevels = make_set(RiskLevelAggregated)
+  by 
+    UserPrincipalName
+  | extend AlertSummary = strcat(
+    " The User: ", UserPrincipalName,
+    " had a risky sign-in followed by privileged role activation within the last ",
+    tostring(toint(PrivilegeWindow / 1d)), " day(s)"
+    ". Roles activated are : ",
+   strcat_array(Roles, ", ")
+  )

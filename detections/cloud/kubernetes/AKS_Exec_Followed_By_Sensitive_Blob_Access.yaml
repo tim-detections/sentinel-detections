@@ -1,0 +1,124 @@
+Id: UC0004-AKS-Exec-Sensitive-Blob-Access
+Name: AKS Exec Followed by Sensitive Blob Storage Access
+Description: Detects command execution inside Azure Kubernetes Service (AKS) containers followed shortly 
+  by read or list activity against sensitive Azure Blob Storage containers.
+  This behavior may indicate container compromise and subsequent data staging or exfiltration.
+Author: Tim A.
+severity: High
+status: Experimental/Research
+version: 1.1
+tactics:
+  - Execution
+  - Collection
+  - Exfiltration
+techniques:
+  - T1609    # Container Administration Command
+  - T1613    # Container and Resource Discovery
+  - T1537    # Transfer Data to Cloud Account
+query: |
+  // Id: UC0004-AKS-Exec-Sensitive-Blob-Access
+  // Name: AKS Exec Followed by Sensitive Blob Storage Access
+  // Description: Detects command execution inside Azure Kubernetes Service (AKS) containers followed shortly
+  // by read or list activity against sensitive Azure Blob
+  // Storage containers. This behavior may indicate container compromise
+  // and subsequent data staging or exfiltration.
+  let LookBack_Period = 1h;
+  let ExecToBlobWindow = 30m;
+  let MinBlobOpsThreshold = 5;
+  // -------------------------------
+  // Step 1: Identify sensitive Blob containers dynamically
+  // Source: Microsoft Defender for Storage alerts
+  // Purpose: Build contextual list of high-risk containers
+  // -------------------------------
+  let SensitiveContainers =
+    SecurityAlert
+    | where TimeGenerated >= ago(7d)
+    | where ProductName in ("Azure Defender", "Microsoft Defender for Storage")
+    | where AlertName has_any ("Sensitive", "exfiltration", "Unusual access")
+    | extend AlertEntities = parse_json(Entities)
+    | mv-expand AlertEntities
+    | where AlertEntities.Type == "container"
+    | extend ContainerName = tostring(AlertEntities.Name)
+    | where isnotempty(ContainerName)
+    | summarize by ContainerName;
+  // ---------------------------------------------------------
+  // Step 2: Detect AKS exec activity
+  // Source: Kubernetes audit logs
+  // Purpose: Identify interactive command execution within containers
+  // ---------------------------------------------------------
+  let AKSExecEvents =
+    AzureDiagnostics
+    | where TimeGenerated >= ago(LookBack_Period)
+    | where Category == "kube-audit"
+    | extend AuditJson = parse_json(log_s)
+    | extend
+        RequestURI = tostring(AuditJson.requestURI),
+        Verb  = tostring(AuditJson.verb)
+    | where RequestURI has "/exec"
+    | where Verb == "create"
+    | extend
+        Pod  = tostring(AuditJson.objectRef.name),
+        Namespace  = tostring(AuditJson.objectRef.namespace),
+        ExecIP  = tostring(split(AuditJson.sourceIPs[0], ":")[0]),
+        ExecTime = TimeGenerated
+    | where isnotempty(ExecIP)
+    | project ExecTime, ExecIP, Pod, Namespace;
+  // ---------------------------------------------------------------
+  // Step 3: Detect Blob read/list activity
+  // Source: StorageBlobLogs
+  // Purpose: Identify potential data access or staging
+  // ---------------------------------------------------------------
+  StorageBlobLogs
+  | where TimeGenerated >= ago(LookBack_Period)
+  | where Category == "StorageRead"
+  | where OperationName in ("GetBlob", "ListBlobs")
+  | extend
+      Container  = split(ObjectKey, "/")[-1],
+      CallerIP   = tostring(split(CallerIpAddress, ":")[0])
+  | where isnotempty(CallerIP)
+  | where Container in (SensitiveContainers)
+  | project TimeGenerated, Container, ObjectKey, CallerIP
+  // -------------------------------
+  // Step 4: Correlate Blob access with prior AKS exec activity
+  // Purpose: Identify post-exploitation pivot using same IP
+  // -------------------------------
+  | join kind=inner AKSExecEvents
+      on $left.CallerIP == $right.ExecIP
+  | where TimeGenerated >= ExecTime
+  | where TimeGenerated < ExecTime + ExecToBlobWindow
+  // -------------------------------
+  // Step 5: Aggregate and threshold
+  // Purpose: Reduce noise and identify bulk or staged access
+  // -------------------------------
+  | summarize
+      BlobOperations   = count(),
+      BlobsTouched     = dcount(ObjectKey),
+      FirstBlobAccess  = min(TimeGenerated),
+      LastBlobAccess   = max(TimeGenerated)
+    by
+      Namespace,
+      Pod,
+      tostring(Container),
+      CallerIP
+  | where BlobOperations > MinBlobOpsThreshold
+  // -------------------------------
+  // Step 6: Analyst-friendly alert context
+  // -------------------------------
+  | extend AlertSummary = strcat(
+      "AKS pod '", Pod,
+      "' in namespace '", Namespace,
+      "' executed commands and subsequently accessed sensitive Blob container '",
+      Container,
+      "' from IP ", CallerIP,
+      " (", tostring(BlobOperations), " blob operations)."
+    )
+  | project
+      AlertSummary,
+      Namespace,
+      Pod,
+      Container,
+      CallerIP,
+      BlobOperations,
+      BlobsTouched,
+      FirstBlobAccess,
+      LastBlobAccess

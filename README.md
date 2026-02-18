@@ -1,20 +1,26 @@
 # Microsoft Sentinel Detections (Detection as Code)
-
-**Author:** Tim A.  
-**Role:** Cybersecurity Engineer – Microsoft Sentinel & KQL  
-**Focus:** Detection Engineering, Threat Hunting, SOC Enablement  
+  **Author:** Tim A.
+  
+  **Role:** Cybersecurity Engineer - Microsoft Sentinel, KQL & Microsoft XDR
+  
+  **Specialization:** Detection Engineering, Threat Hunting, SOC Enablement
 
 ---
 
 ### Overview
 
-This repository contains **Microsoft Sentinel analytic detection rules** developed using a **detection-as-code** approach.
+This repository contains Microsoft Sentinel analytic detection rules developed using a **detection-as-code** approach and organised by security domain and attack chain
 
-The goal of this lab is to demonstrate:
-- Real-world detection engineering practices
-- Well-structured and readable KQL
-- Version-controlled detection tuning
-- Security-relevant logic aligned to attacker behavior
+The purpose of this repository is to demonstrate how detection engineering is performed in a production SOC environment, with an emphasis on **maintainability**, **signal quality**, and **attacker-centric detection logic** rather than alert volume.
+
+All detections are written, tested, and iteratively refined as they would be in a real-world Microsoft Sentinel deployment
+
+**What This Repository Demonstrates:**
+- Real-world detection engineering practices aligned to modern cloud threats
+- Structured, readable, and maintainable KQL
+- Version-controlled detection development and tuning
+- Detections mapped to attacker behaviour and attack paths
+- Practical SOC-ready analytics designed to reduce noise and increase confidence
 
 All detections are written, tested, and iteratively improved as they would be in a production SOC environment.
 
@@ -22,11 +28,11 @@ All detections are written, tested, and iteratively improved as they would be in
 
 ## What You’ll Find in This Repository
 
-- 📌 **KQL-based Sentinel analytics rules**
-- 🧪 Iterative tuning and false-positive reduction
-- 🧱 Versioned detections (`v1.0.0`, `v1.1.0`, etc.)
-- 📝 Clear documentation explaining detection intent
-- 🎯 Focus on signal quality over alert volume
+- KQL-based Sentinel analytics rules
+- Iterative tuning and false-positive reduction
+- Versioned detections (`v1.0.0`, `v1.1.0`, etc.)
+- Clear documentation explaining detection intent
+- Focus on signal quality over alert volume
 
 ---
 
@@ -48,13 +54,61 @@ This lab follows a few core principles:
 
 ---
 
-## Repository Structure (Example)
+**Repository Structure**
+
+Detections are organised by security domain and, where applicable, attack-chain alignment to support scalability and iterative improvement:
+
+- **Identity** – Entra ID sign-ins, authentication abuse, MFA and account compromise
+- **Endpoint** – Host-based attacker behaviour and execution patterns
+- **Cloud** – Azure, Kubernetes, and workload-level attack paths
+- **Data Protection** – Exfiltration, sensitive data access, and insider risk
+- **Cross-Domain** – Correlated detections spanning identity, cloud, endpoint, and data
+- **utilities** -
+
+Each detection family supports versioning (v1 → v2 → v3) to reflect ongoing tuning and maturity.
+
+## **Repository Structure – Intended View (WIP)**
 
 ```text
 sentinel-detections/
+├── README.md                     # Executive overview (what, why, impact)
+├── CONTRIBUTING.md               # Optional: how detections are structured
 ├── detections/
 │   ├── identity/
+│   │   ├── impossible-travel/
+│   │   │   ├── README.md
+│   │   │   ├── impossible_travel_v1_distance_speed.yaml
+│   │   │   └── impossible_travel_v2_new_device_context.yaml
+│   │   ├── suspicious-signin-email/
+│   │   │   ├── README.md
+│   │   │   └── suspicious_signin_high_risk_email_activity.yaml
+│   │   ├── mfa-abuse/             # future
+│   │   ├── privileged-access/     # future (PIM, admin abuse)
+│   │
 │   ├── endpoint/
+│   │   ├── persistence/
+│   │   ├── credential-access/
+│   │   └── defense-evasion/
+│   │
 │   ├── cloud/
-│   └── network/
-├── README.md
+│   │   ├── kubernetes/
+│   │   │   ├── README.md
+│   │   │   └── aks_exec_followed_by_sensitive_blob_access.yaml
+│   │   ├── azure-resource-abuse/
+│   │   └── service-principal/
+│   │
+│   ├── data-protection/
+│   │   ├── exfiltration/
+│   │   ├── insider-threat/
+│   │   └── label-abuse/
+│   │
+│   └── cross-domain/
+│       ├── identity-to-cloud/
+│       ├── endpoint-to-cloud/
+│       └── identity-to-data/
+│
+└── utilities/
+    ├── baseline-queries/
+    ├── enrichment-functions/
+    └── lookup-tables/
+
