@@ -73,17 +73,26 @@ Each detection family supports versioning (v1 → v2 → v3) to reflect ongoing 
 sentinel-detections/
 ├── README.md                     # Executive overview (what, why, impact)
 ├── CONTRIBUTING.md               # Optional: how detections are structured
+│
 ├── detections/
 │   ├── identity/
 │   │   ├── impossible-travel/
 │   │   │   ├── README.md
 │   │   │   ├── impossible_travel_v1_distance_speed.yaml
 │   │   │   └── impossible_travel_v2_new_device_context.yaml
+│   │   │
 │   │   ├── suspicious-signin-email/
 │   │   │   ├── README.md
 │   │   │   └── suspicious_signin_high_risk_email_activity.yaml
+│   │   │
 │   │   ├── mfa-abuse/             # future
-│   │   ├── privileged-access/     # future (PIM, admin abuse)
+│   │   ├── privileged-access/     # (PIM, admin abuse)
+│   │   │
+│   │   └── credential-access/   
+│   │       └── password-spray/   
+│   │           ├── README.md
+│   │           ├── aad-password-spray-with-success-correlation_v1.yaml
+│   │           └── playbook-aad-password-spray.md
 │   │
 │   ├── endpoint/
 │   │   ├── persistence/
@@ -111,4 +120,3 @@ sentinel-detections/
     ├── baseline-queries/
     ├── enrichment-functions/
     └── lookup-tables/
-
