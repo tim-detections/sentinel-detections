@@ -9,7 +9,7 @@
 
 ### Overview
 
-This repository contains Microsoft Sentinel analytic detection rules developed using a **detection-as-code** approach and organised by security domain and attack chain.
+This repository contains Microsoft Sentinel analytic detection rules developed using a **detection-as-code** approach and organised by security domain and attack chain
 
 The purpose of this repository is to demonstrate how detection engineering is performed in a production SOC environment, with an emphasis on **maintainability**, **signal quality**, and **attacker-centric detection logic** rather than alert volume.
 
