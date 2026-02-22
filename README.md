@@ -1,4 +1,5 @@
 # Microsoft Sentinel Detections (Detection as Code)
+
   **Author:** Tim A.
   
   **Role:** Cybersecurity Engineer - Microsoft Sentinel, KQL & Microsoft XDR
@@ -7,7 +8,7 @@
 
 ---
 
-### Overview
+## Overview
 
 This repository contains Microsoft Sentinel analytic detection rules developed using a **detection-as-code** approach and organised by security domain and attack chain
 
@@ -16,6 +17,7 @@ The purpose of this repository is to demonstrate how detection engineering is pe
 All detections are written, tested, and iteratively refined as they would be in a real-world Microsoft Sentinel deployment
 
 **What This Repository Demonstrates:**
+
 - Real-world detection engineering practices aligned to modern cloud threats
 - Structured, readable, and maintainable KQL
 - Version-controlled detection development and tuning
@@ -54,7 +56,7 @@ This lab follows a few core principles:
 
 ---
 
-**Repository Structure**
+## **Repository Structure**
 
 Detections are organised by security domain and, where applicable, attack-chain alignment to support scalability and iterative improvement:
 
