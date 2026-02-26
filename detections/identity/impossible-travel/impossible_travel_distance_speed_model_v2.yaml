@@ -1,0 +1,139 @@
+Id: UC0002-Impossible-Travel-Based-on-Sign-In-Distance&Speed
+Name: Impossible Travel Detected Based on Sign-In Distance and Speed(v2)
+Description: This detection rule implements a geospatially driven impossible travel model by calculating the physical distance 
+    and derived travel velocity (km/h) between consecutive Azure AD sign-ins using precise latitude and longitude coordinates. 
+    Unlike traditional impossible travel detections that rely primarily on country transitions or static heuristics, this approach 
+    evaluates real-world travel feasibility through explicit distance and speed thresholds. 
+    The detection is further enriched with contextual signals—including device change analysis, Azure AD sign-in risk levels,
+    and a weighted risk scoring model—to improve detection fidelity, prioritize high-confidence events, 
+    and reduce false positives commonly associated with VPN or proxy usage.
+Author: Tim A.
+severity: High
+status: Available/Research
+version: 2.0
+tactics:
+  - Initial Access
+  - Credential Access
+  - Persistence
+techniques:
+  - T1078
+  - T1566
+  - T1566.001
+customDetails:
+  - RiskScore: RiskScore
+  - SpeedKmh: SpeedKmh
+  - DistanceKM: DistanceKM
+references:
+  - https://attack.mitre.org/techniques/T1078/
+  - https://learn.microsoft.com/en-us/azure/sentinel/
+query: |
+  // Id: UC0002-Impossible-Travel-Based-on-Sign-In-Distance&Speed
+  // Name - Impossible Travel Detected Based on Sign-In Distance and Speed(v2)
+  // Description: This detection rule implements a geospatially driven impossible travel model by calculating the physical distance
+  // and derived travel velocity (km/h) between consecutive Azure AD sign-ins using precise latitude and longitude coordinates.
+  // Unlike traditional impossible travel detections that rely primarily on country transitions or static heuristics, this approach
+  // evaluates real-world travel feasibility through explicit distance and speed thresholds.
+  // The detection is further enriched with contextual signals—including device change analysis, Azure AD sign-in risk levels, 
+  // and a weighted risk scoring model—to improve detection fidelity, prioritize high-confidence events,
+  // and reduce false positives commonly associated with VPN or proxy usage.
+Author: Tim A
+  // ===============================================================================
+  // Production ReadyImpossible Travel Detection Rule Based Distance, Speed and Time
+  // ===============================================================================
+  let TimeWindow = 14d;
+  let MaxTravelTimeMinutes = 120;
+  let MaxSpeedKmh = 850;
+  let MinDistanceKM = 500;
+  let TrustedIPs = (_GetWatchlist('Trusted_IPs') 
+    | project IPAddress = tostring(IPAddress));
+  let ServiceAccounts = (_GetWatchlist('Service_Accounts')
+    | project UserPrincipalName = tostring(UserPrincipalName));
+  // Pull sign-in data
+  let Signins =
+  SigninLogs
+  | where TimeGenerated > ago(TimeWindow)
+  | where ResultType == 0
+  | where isnotempty(LocationDetails.geoCoordinates.latitude)
+  | where isnotempty(LocationDetails.geoCoordinates.longitude)
+  | where IPAddress !in (TrustedIPs)
+  | where UserPrincipalName !in (ServiceAccounts)
+  | project
+    TimeGenerated,
+    UserPrincipalName,
+    tostring(IPAddress),
+    AppDisplayName,
+    ClientAppUsed,
+    DeviceId = tostring(DeviceDetail.deviceId),
+    RiskLevel = tostring(RiskLevelDuringSignIn),
+    Country = tostring(LocationDetails.countryOrRegion),
+    City = LocationDetails.city,
+    Latitude = todouble(LocationDetails.geoCoordinates.latitude),
+    Longitude = todouble(LocationDetails.geoCoordinates.longitude);
+  // Compare consecutive sign-ins
+  Signins
+  | order by UserPrincipalName asc, TimeGenerated asc
+  | serialize
+  | extend
+    PrevUser = prev(UserPrincipalName),
+    PrevTime = prev(TimeGenerated),
+    PrevIP = prev(IPAddress),
+    PrevCountry = prev(Country),
+    PrevCity = prev(City),
+    PrevLatitude = prev(Latitude),
+    PrevLongitude = prev(Longitude),
+    PrevDevice = prev(DeviceId)
+  | where UserPrincipalName == PrevUser
+  | extend TimeDiffMinutes = datetime_diff("minute", TimeGenerated, PrevTime)
+  | where TimeDiffMinutes > 0 and TimeDiffMinutes <= MaxTravelTimeMinutes
+  | extend TimeDiffReadable = strcat(TimeDiffMinutes, " minutes")
+  | extend DistanceKM = geo_distance_2points(
+        Longitude, Latitude,
+        PrevLongitude, PrevLatitude
+    ) / 1000.0
+  | extend SpeedKmh = DistanceKM / (TimeDiffMinutes / 60.0)
+  | where DistanceKM >= MinDistanceKM
+  | where SpeedKmh >= MaxSpeedKmh
+  // Additional context enrichment
+  | extend
+    NewCountry = iff(Country != PrevCountry, 1, 0),
+    DifferentDevice = iff(DeviceId != PrevDevice and isnotempty(DeviceId), 1, 0),
+    HighRiskSignin = iff(RiskLevel in ("medium","high"), 1, 0)
+  // Risk scoring model
+  | extend RiskScore =
+        (iff(SpeedKmh > 1200, 3, 2))
+      + (NewCountry * 2)
+      + (DifferentDevice * 2)
+      + (HighRiskSignin * 3)
+  // Alert threshold
+  | where RiskScore >= 5
+  // Alert enrichment
+  | extend AlertSummary = strcat(
+      "Impossible travel detected for user ", UserPrincipalName,
+      ". Previous sign-in: ", PrevCity, ", ", PrevCountry,
+      ". Current sign-in: ", City, ", ", Country,
+      ". Time between sign-ins: ", TimeDiffReadable,
+      ". Distance: ", round(DistanceKM, 2), " km",
+      ". Calculated speed: ", round(SpeedKmh, 2), " km/h",
+      ". Risk score: ", RiskScore
+  )
+  | project
+      TimeGenerated,
+      UserPrincipalName,
+      IPAddress,
+      AppDisplayName,
+      ClientAppUsed,
+      DeviceId,
+      Country,
+      City,
+      PrevTime,
+      PrevIP,
+      PrevCountry,
+      PrevCity,
+      TimeDiffReadable,
+      TimeDiffMinutes,
+      DistanceKM = round(DistanceKM,2),
+      SpeedKmh = round(SpeedKmh,2),
+      RiskLevel,
+      RiskScore,
+      AlertSummary
+
