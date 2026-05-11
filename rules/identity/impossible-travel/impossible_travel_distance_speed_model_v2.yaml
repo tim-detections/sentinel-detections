@@ -36,7 +36,7 @@ query: |
   // The detection is further enriched with contextual signals—including device change analysis, Azure AD sign-in risk levels, 
   // and a weighted risk scoring model—to improve detection fidelity, prioritize high-confidence events,
   // and reduce false positives commonly associated with VPN or proxy usage.
-Author: Tim A
+  // Author: Tim A.
   // ===============================================================================
   // Production ReadyImpossible Travel Detection Rule Based Distance, Speed and Time
   // ===============================================================================
