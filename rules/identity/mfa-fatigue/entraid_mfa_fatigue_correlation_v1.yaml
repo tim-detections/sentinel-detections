@@ -5,6 +5,8 @@ description: |
   declines several requests, and eventually completes a successful authentication within a short period.
 status: Available
 severity: High
+kind: Scheduled
+enabled: true
 author: Tim A.
 version: 1.0.0
 
