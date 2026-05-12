@@ -1,11 +1,11 @@
 Id: UC0002-Impossible-Travel-Based-on-Sign-In-Distance&Speed
 Name: Impossible Travel Detected Based on Sign-In Distance and Speed(v2)
-Description: This detection rule implements a geospatially driven impossible travel model by calculating the physical distance 
-    and derived travel velocity (km/h) between consecutive Azure AD sign-ins using precise latitude and longitude coordinates. 
-    Unlike traditional impossible travel detections that rely primarily on country transitions or static heuristics, this approach 
-    evaluates real-world travel feasibility through explicit distance and speed thresholds. 
+Description: This detection rule implements a geospatially driven impossible travel model by calculating the physical distance
+    and derived travel velocity (km/h) between consecutive Azure AD sign-ins using precise latitude and longitude coordinates.
+    Unlike traditional impossible travel detections that rely primarily on country transitions or static heuristics, this approach
+    evaluates real-world travel feasibility through explicit distance and speed thresholds.
     The detection is further enriched with contextual signals—including device change analysis, Azure AD sign-in risk levels,
-    and a weighted risk scoring model—to improve detection fidelity, prioritize high-confidence events, 
+    and a weighted risk scoring model—to improve detection fidelity, prioritize high-confidence events,
     and reduce false positives commonly associated with VPN or proxy usage.
 Author: Tim A.
 severity: High
@@ -33,7 +33,7 @@ query: |
   // and derived travel velocity (km/h) between consecutive Azure AD sign-ins using precise latitude and longitude coordinates.
   // Unlike traditional impossible travel detections that rely primarily on country transitions or static heuristics, this approach
   // evaluates real-world travel feasibility through explicit distance and speed thresholds.
-  // The detection is further enriched with contextual signals—including device change analysis, Azure AD sign-in risk levels, 
+  // The detection is further enriched with contextual signals—including device change analysis, Azure AD sign-in risk levels,
   // and a weighted risk scoring model—to improve detection fidelity, prioritize high-confidence events,
   // and reduce false positives commonly associated with VPN or proxy usage.
   // Author: Tim A.
@@ -44,7 +44,7 @@ query: |
   let MaxTravelTimeMinutes = 120;
   let MaxSpeedKmh = 850;
   let MinDistanceKM = 500;
-  let TrustedIPs = (_GetWatchlist('Trusted_IPs') 
+  let TrustedIPs = (_GetWatchlist('Trusted_IPs')
     | project IPAddress = tostring(IPAddress));
   let ServiceAccounts = (_GetWatchlist('Service_Accounts')
     | project UserPrincipalName = tostring(UserPrincipalName));
@@ -136,4 +136,3 @@ query: |
       RiskLevel,
       RiskScore,
       AlertSummary
-

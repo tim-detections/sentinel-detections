@@ -1,14 +1,14 @@
 Id: UC10005-Risky_SignIn_Followed_By_Privileged_Role_Activation
 name: Risky Sign-In Followed by Privileged Role Activation
-Description: Detects potential privilege escalation by correlating risky sign-in events with subsequent 
-  privileged role activations or assignments in Microsoft Entra ID. This behavior may indicate successful 
+Description: Detects potential privilege escalation by correlating risky sign-in events with subsequent
+  privileged role activations or assignments in Microsoft Entra ID. This behavior may indicate successful
   account compromise followed by attempts to gain elevated access through Azure AD Privileged Identity Management (PIM) or direct role assignment.
 Author: Tim A.
 severity: High
 status: Experimental/Research
 data-source:
-- SigninLogs
-- AuditLogs
+  - SigninLogs
+  - AuditLogs
 tactics:
   - PrivilegeEscalation
   - InitialAccess
@@ -70,7 +70,7 @@ query: |
     Roles = make_set(PrivilegedRole),
     IPs = make_set(IPAddress),
     RiskLevels = make_set(RiskLevelAggregated)
-  by 
+  by
     UserPrincipalName
   | extend AlertSummary = strcat(
     " The User: ", UserPrincipalName,
