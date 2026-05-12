@@ -136,4 +136,3 @@ query: |
       RiskLevel,
       RiskScore,
       AlertSummary
-      

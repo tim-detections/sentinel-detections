@@ -102,4 +102,3 @@ query: |
       UrlCount,
       AlertSummary
     | order by WeeklyActivity desc, TargetUserId asc
-    

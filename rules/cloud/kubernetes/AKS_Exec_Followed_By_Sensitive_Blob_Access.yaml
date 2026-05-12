@@ -122,4 +122,3 @@ query: |
       BlobsTouched,
       FirstBlobAccess,
       LastBlobAccess
-      

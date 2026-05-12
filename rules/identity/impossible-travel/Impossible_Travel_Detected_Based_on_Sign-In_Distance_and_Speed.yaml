@@ -87,4 +87,3 @@ query: |
       DistanceKM,
       SpeedKmh,
       TimeDiffReadable
-      
