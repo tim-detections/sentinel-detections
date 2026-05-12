@@ -2,7 +2,7 @@ id: 9f2f5d8a-6b3a-4b88-9f8d-3c9d1a4e7b11
 name: Entra ID MFA Fatigue with Successful Authentication and Device Context Correlation
 description: |
   Detects potential MFA fatigue (push bombing) attacks where a user receives multiple MFA prompts,
-  declines several requests, and eventually completes a successful authentication within a short period.
+  declines several requests, and eventually completes a successful authentication within a short period
 status: Available
 severity: High
 kind: Scheduled
