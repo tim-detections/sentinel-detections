@@ -1,0 +1,28 @@
+name: "CI: Validate YAML Syntax"
+
+on:
+  push:
+    paths:
+      - 'rules/**/*.yaml'
+  pull_request:
+    paths:
+      - 'rules/**/*.yaml'
+
+jobs:
+  yaml-lint:
+    name: "Lint Detection Rules"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run YAML Lint
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: rules/
+          config_data: |
+            extends: default
+            rules:
+              line-length: disable
+              document-start: disable
+              truthy: disable
