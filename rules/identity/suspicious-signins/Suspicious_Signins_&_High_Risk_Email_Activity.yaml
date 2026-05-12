@@ -83,13 +83,13 @@ query: |
   | extend PercentageOfWeeklyInboxActivity =
       round(100.0 * QualifiedEmailCounts / TotalInboxEmails, 4)
   | extend AlertSummary = strcat(
-    TargetUserId, 
+    TargetUserId,
     " had ", QualifiedEmailCounts, " inbound email(s) with over 2 attachments",
     " during the week of ", format_datetime(WeeklyActivity, 'yyyy-MM-dd'),
     " (", tostring(PercentageOfWeeklyInboxActivity), "% of inbox activity).",
-    iif(coalesce(UrlCount, 0) > 0, 
+    iif(coalesce(UrlCount, 0) > 0,
         strcat(" Emails contained ", UrlCount,
-        " URL(s) — strong indicator of potential phishing/malware attack"), 
+        " URL(s) — strong indicator of potential phishing/malware attack"),
         " No URLs detected in these emails."
       )
   )
@@ -102,3 +102,4 @@ query: |
       UrlCount,
       AlertSummary
     | order by WeeklyActivity desc, TargetUserId asc
+    
