@@ -11,11 +11,13 @@ name: Deploy Content to secops-analytic-workspace-prod [0cfab37d-b60f-45d9-afd2-
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - feature/*
     paths:
-    - '**'
-    - '!.github/workflows/**'  # this filter prevents other workflow changes from triggering this workflow
-    - '.github/workflows/sentinel-deploy-0cfab37d-b60f-45d9-afd2-06ce1ee86efc.yml'
+      - '**'
+      - '!.github/workflows/**'  # this filter prevents other workflow changes from triggering this workflow
+      - '.github/workflows/sentinel-deploy-0cfab37d-b60f-45d9-afd2-06ce1ee86efc.yml'
 
 jobs:
   deploy-content:
@@ -91,5 +93,6 @@ jobs:
       with:
         azPSVersion: 'latest'
         inlineScript: |
-            Get-ChildItem -Recurse *.yaml
-            & "${{ github.workspace }}\.github\workflows\azure-sentinel-deploy-0cfab37d-b60f-45d9-afd2-06ce1ee86efc.ps1"
+          Write-Host "==== YAML FILES DETECTED ===="
+          Get-ChildItem -Recurse *.yaml
+          & "${{ github.workspace }}\.github\workflows\azure-sentinel-deploy-0cfab37d-b60f-45d9-afd2-06ce1ee86efc.ps1"
