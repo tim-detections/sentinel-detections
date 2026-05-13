@@ -31,7 +31,7 @@ jobs:
       sourceControlId: '0cfab37d-b60f-45d9-afd2-06ce1ee86efc'
       rootDirectory: '${{ github.workspace }}'
       githubAuthToken: ${{ secrets.GITHUB_TOKEN }}
-      smartDeployment: 'true'
+      smartDeployment: 'false'
     permissions:
       contents: write
       id-token: write # Require write permission to Fetch an OIDC token.
@@ -91,4 +91,5 @@ jobs:
       with:
         azPSVersion: 'latest'
         inlineScript: |
-          ${{ github.workspace }}//.github/workflows/azure-sentinel-deploy-0cfab37d-b60f-45d9-afd2-06ce1ee86efc.ps1
+            Get-ChildItem -Recurse *.yaml
+            & "${{ github.workspace }}\.github\workflows\azure-sentinel-deploy-0cfab37d-b60f-45d9-afd2-06ce1ee86efc.ps1"
