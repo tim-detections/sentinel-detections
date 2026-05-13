@@ -7,7 +7,7 @@ description: |
   IP diversity, and Entra ID risk signals to identify likely account compromise attempts
 
 author: Tim A.
-version: 1.0.0
+version: 1.0.1
 kind: Scheduled
 severity: High
 status: Available
