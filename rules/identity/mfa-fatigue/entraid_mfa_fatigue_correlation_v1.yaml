@@ -4,7 +4,7 @@ description: |
   Detects potential MFA fatigue (push bombing) attacks where a user receives multiple MFA prompts,
   declines several requests, and eventually completes a successful authentication within a short period.
   The rule correlates MFA denials, successful sign-ins, device anomalies, geographic anomalies,
-  IP diversity, and Entra ID risk signals to identify likely account compromise attempts.
+  IP diversity, and Entra ID risk signals to identify likely account compromise attempts
 
 author: Tim A.
 version: 1.0.0
