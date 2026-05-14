@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "resources": [
+    {
+      "type": "Microsoft.SecurityInsights/alertRules",
+      "apiVersion": "2024-01-01-preview",
+      "name": "d7a819b2-3e4f-4a6c-9d8b-1e2f3a4b5c6d",
+      "kind": "Scheduled",
+      "properties": {
+        "displayName": "Entra ID MFA Fatigue with Successful Authentication and Device Context Correlation",
+        "description": "Detects potential MFA fatigue (push bombing) attacks where a user receives multiple MFA prompts, declines several requests, and eventually completes a successful authentication within a short period.",
+        "severity": "High",
+        "enabled": true,
+        "query": "let timeframe = 20m;\nlet denialThreshold = 5;\nlet riskScoreThreshold = 8;\nlet lookback = 14d;\nlet KnownDevices = SigninLogs\n| where TimeGenerated between (ago(lookback) .. ago(1h))\n| summarize KnownDeviceSet = make_set(DeviceDetail.displayName) by UserPrincipalName;\nlet MFAFatigue = SigninLogs\n| where TimeGenerated > ago(1h)\n| where AuthenticationRequirement == \"multiFactorAuthentication\"\n| extend ResultTypeString = tostring(ResultType)\n| extend MFA_Status = tostring(Status.additionalDetails)\n| extend RiskLevelString = tostring(RiskLevelDuringSignIn)\n| extend RiskLevelScore = case(RiskLevelString == \"high\", 5, RiskLevelString == \"medium\", 3, RiskLevelString == \"low\", 1, 0)\n| summarize DenialCount = countif(MFA_Status has \"User declined\" or ResultTypeString == \"500121\"), SuccessCount = countif(ResultTypeString == \"0\"), IPList = make_set(IPAddress), LocationList = make_set(LocationDetails.countryOrRegion), CityList = make_set(LocationDetails.city), DeviceList = make_set(DeviceDetail.displayName), OSList = make_set(DeviceDetail.operatingSystem), BrowserList = make_set(DeviceDetail.browser), MaxRiskLevelScore = max(RiskLevelScore) by UserPrincipalName, bin(TimeGenerated, timeframe)\n| where DenialCount >= denialThreshold and SuccessCount > 0;\nMFAFatigue\n| join kind=leftouter KnownDevices on UserPrincipalName\n| extend NewDeviceUsed = iff(array_length(set_difference(DeviceList, coalesce(KnownDeviceSet, dynamic([])))) > 0, true, false)\n| extend MultipleCountries = iff(array_length(LocationList) > 1, true, false)\n| extend MultipleIPs = iff(array_length(IPList) > 1, true, false)\n| extend RiskScore = DenialCount + (SuccessCount * 2) + (toint(NewDeviceUsed) * 3) + (toint(MultipleCountries) * 3) + (toint(MultipleIPs) * 2) + MaxRiskLevelScore\n| where RiskScore >= riskScoreThreshold\n| extend RiskLevel = case(MaxRiskLevelScore == 5, \"high\", MaxRiskLevelScore == 3, \"medium\", MaxRiskLevelScore == 1, \"low\", \"none\")\n| project TimeGenerated, UserPrincipalName, DenialCount, SuccessCount, RiskLevel, RiskScore, NewDeviceUsed, MultipleCountries, MultipleIPs, IPAddress = tostring(IPList[0]), IPList, LocationList, CityList, DeviceList, OSList, BrowserList",
+        "queryFrequency": "PT1H",
+        "queryPeriod": "P14D",
+        "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0,
+        "suppressionDuration": "PT1H",
+        "suppressionEnabled": false,
+        "tactics": [
+          "CredentialAccess",
+          "InitialAccess"
+        ],
+        "techniques": [
+          "T1110",
+          "T1621"
+        ],
+        "entityMappings": [
+          {
+            "entityType": "Account",
+            "fieldMappings": [
+              {
+                "identifier": "Name",
+                "columnName": "UserPrincipalName"
+              }
+            ]
+          },
+          {
+            "entityType": "IP",
+            "fieldMappings": [
+              {
+                "identifier": "Address",
+                "columnName": "IPAddress"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
